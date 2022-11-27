@@ -1,3 +1,4 @@
+import random
 import time
 
 import pygame
@@ -44,6 +45,10 @@ coneHeight = coneImg.get_height() * scaler
 streetDrivewayScrollX = 0
 streetCityScrollX = 0
 streetBackground1ScrollX = 0
+coneScrollX = 0
+cone2ScrollX = 0 + windowWidth // 2
+randomConeY = 730
+randomCone2Y = 710
 scrollVelocity = 1 * scaler
 scrollVelocityMultiplier = 1
 gameBackground = (85, 123, 153)
@@ -55,6 +60,9 @@ playerYVel = 0
 counter = 0
 isPlayer1Jumping = False
 run = True
+
+isGameOver = False
+gameSlowdown = 1
 
 clock = pygame.time.Clock()
 
@@ -115,7 +123,7 @@ while run:
             skateImg = skateImg5
         elif counter % 7 == 6:
             skateImg = skateImg6
-    else:
+    elif not isGameOver:
         counter = 0
         skateImg = skateImg0
         isPlayer1PerformingATrick = False
@@ -142,21 +150,31 @@ while run:
     border = pygame.draw.rect(win, gameBackground, (
         windowBorder, windowBorder, windowWidth - 2 * windowBorder, windowHeight - 2 * windowBorder))
 
-    streetDrivewayScrollX -= getGameVelocity(scrollVelocityMultiplier)
+    if gameSlowdown <= 0:
+        gameSlowdown = 0
+    elif isGameOver:
+        gameSlowdown = gameSlowdown - .01
+    streetDrivewayScrollX -= getGameVelocity(scrollVelocityMultiplier * gameSlowdown)
     if -streetDrivewayScrollX == streetDrivewayWidth:
         streetDrivewayScrollX = 0
-
-    streetCityScrollX -= getGameVelocity(scrollVelocityMultiplier)
+    streetCityScrollX -= getGameVelocity(scrollVelocityMultiplier * gameSlowdown)
     if -streetCityScrollX == streetCityWidth:
         streetCityScrollX = 0
+    coneScrollX -= getGameVelocity(scrollVelocityMultiplier * gameSlowdown)
+    if -coneScrollX >= windowWidth + coneWidth:
+        coneScrollX = 0
+        randomConeY = random.randint((windowHeight - streetDrivewayHeight), round(windowHeight - coneHeight * .3))
+    cone2ScrollX -= getGameVelocity(scrollVelocityMultiplier * gameSlowdown)
+    if -cone2ScrollX >= windowWidth + coneWidth:
+        cone2ScrollX = 0
+        randomCone2Y = random.randint((windowHeight - streetDrivewayHeight), round(windowHeight - coneHeight * .3))
 
     streetDriveway = pygame.draw.rect(win, (255, 0, 255), (
         0, windowHeight - streetDrivewayHeight, streetDrivewayWidth, streetDrivewayHeight))
     streetDrivewayImg = pygame.transform.scale(streetDrivewayImg, (streetDrivewayWidth, streetDrivewayHeight))
     streetDrivewayImgSecond = pygame.transform.scale(streetDrivewayImg, (streetDrivewayWidth, streetDrivewayHeight))
 
-    streetCity = pygame.draw.rect(win, gameBackground, (
-        0, windowHeight - streetCityHeight - streetDrivewayHeight, streetCityWidth, streetCityHeight))
+    streetCityY = windowHeight - streetCityHeight - streetDrivewayHeight
     streetCityImg = pygame.transform.scale(streetCityImg, (streetCityWidth, streetCityHeight))
     streetCityImgSecond = pygame.transform.scale(streetCityImg, (streetCityWidth, streetCityHeight))
 
@@ -170,18 +188,42 @@ while run:
     my_font = pygame.font.SysFont('Monospace', 12)
     text_surface = my_font.render(textString, False, (0, 0, 0))
 
+    cone = pygame.draw.rect(win, (255, 0, 0), (coneScrollX + windowWidth, randomConeY, coneWidth, coneHeight * .3))
+    coneImg = pygame.transform.scale(coneImg, (coneWidth, coneHeight))
+    cone2 = pygame.draw.rect(win, (255, 0, 0), (cone2ScrollX + windowWidth, randomCone2Y, coneWidth, coneHeight * .3))
+    cone2Img = pygame.transform.scale(coneImg, (coneWidth, coneHeight))
+
     # rendered
-    win.blit(streetCityImg, (streetCityScrollX, streetCity.y))
-    win.blit(streetCityImgSecond, (streetCityScrollX + streetCityWidth, streetCity.y))
+    win.blit(streetCityImg, (streetCityScrollX, streetCityY))
+    win.blit(streetCityImgSecond, (streetCityScrollX + streetCityWidth, streetCityY))
     win.blit(streetDrivewayImg, (streetDrivewayScrollX, streetDriveway.y))
     win.blit(streetDrivewayImgSecond, (streetDrivewayScrollX + streetDrivewayWidth, streetDriveway.y))
-    win.blit(skateImg, (player1skate.x, getPlayerSkatePosition()))
-    win.blit(player1img, (player1x, getPlayerJumpPosition()))
     win.blit(text_surface, (0, 0))
+    if player1skate.y > cone.y:
+        if player1skate.y > cone2.y:
+            win.blit(coneImg, (coneScrollX + windowWidth, cone.y - coneHeight * .7))
+            win.blit(cone2Img, (cone2ScrollX + windowWidth, cone2.y - coneHeight * .7))
+            win.blit(skateImg, (player1skate.x, getPlayerSkatePosition()))
+            win.blit(player1img, (player1x, getPlayerJumpPosition()))
+        else:
+            win.blit(coneImg, (coneScrollX + windowWidth, cone.y - coneHeight * .7))
+            win.blit(skateImg, (player1skate.x, getPlayerSkatePosition()))
+            win.blit(player1img, (player1x, getPlayerJumpPosition()))
+            win.blit(cone2Img, (cone2ScrollX + windowWidth, cone2.y - coneHeight * .7))
+    else:
+        if player1skate.y > cone2.y:
+            win.blit(cone2Img, (cone2ScrollX + windowWidth, cone2.y - coneHeight * .7))
+            win.blit(skateImg, (player1skate.x, getPlayerSkatePosition()))
+            win.blit(player1img, (player1x, getPlayerJumpPosition()))
+            win.blit(coneImg, (coneScrollX + windowWidth, cone.y - coneHeight * .7))
+        else:
+            win.blit(skateImg, (player1skate.x, getPlayerSkatePosition()))
+            win.blit(player1img, (player1x, getPlayerJumpPosition()))
+            win.blit(coneImg, (coneScrollX + windowWidth, cone.y - coneHeight * .7))
+            win.blit(cone2Img, (cone2ScrollX + windowWidth, cone2.y - coneHeight * .7))
 
-    cone = pygame.draw.rect(win, (255, 0, 0), (500, 500, coneWidth, coneHeight * .3))
-    coneImg = pygame.transform.scale(coneImg, (coneWidth, coneHeight))
-    win.blit(coneImg, (cone.x, cone.y - coneHeight * .7))
+    if player1skate.colliderect(cone):
+        isGameOver = True
 
     pygame.display.update()
 
