@@ -34,6 +34,20 @@ class Game:
                 entity.x = reset
         self.drawEntity(entity)
 
+    def isCollision(self, rect1, rect2):
+        x1 = rect1.x < rect2.x + rect2.width * self.scaler
+        x2 = rect1.x + rect1.width * self.scaler > rect2.x
+        y1 = rect1.y < rect2.y + rect2.height * self.scaler
+        y2 = rect1.height * self.scaler + rect1.y > rect2.y
+        if x1 and x2 and y1 and y2:
+            return True
+        else:
+            return False
+
+    def drawCollision(self, entity):
+        return pygame.draw.rect(self.win, (255, 0, 0),
+                                (entity.x, entity.y, entity.width * self.scaler, entity.height * self.scaler))
+
     def drawText(self, string, font, color, x, y):
         Game.pygame.font.init()
         entity = font.render(string, False, color)
@@ -45,7 +59,8 @@ class Game:
             entity.x -= velocity * 1.5
         elif self.keys[Game.pygame.K_d] and entity.x < self.width - entity.width * self.scaler:
             entity.x += velocity
-        if self.keys[Game.pygame.K_w] and entity.y > self.height - threshold_entity.height * self.scaler - entity.height * self.scaler * .75:
+        if self.keys[
+            Game.pygame.K_w] and entity.y > self.height - threshold_entity.height * self.scaler - entity.height * self.scaler * .75:
             entity.y -= velocity
         elif self.keys[Game.pygame.K_s] and entity.y < self.height - entity.height * self.scaler:
             entity.y += velocity
@@ -66,6 +81,13 @@ class Game:
         driveway.y = self.height - driveway.height * self.scaler
         drivewaySecond = Entity(Game.pygame, "assets/bg_street_road_v2.png", 0, 0)
         drivewaySecond.y = self.height - driveway.height * self.scaler
+        invisibleCoin = Entity(Game.pygame, "assets/en_coin_1.png", 0, -99999)
+        coinEntities = [
+            Entity(Game.pygame, "assets/en_coin_1.png", 0, 0),
+            Entity(Game.pygame, "assets/en_coin_2.png", 0, 0),
+            Entity(Game.pygame, "assets/en_coin_3.png", 0, 0),
+            Entity(Game.pygame, "assets/en_coin_4.png", 0, 0)
+        ]
         background = Entity(Game.pygame, "assets/bg_street_city.png", self.scaler, 0)
         backgroundSecond = Entity(Game.pygame, "assets/bg_street_city.png", 0, 0)
         background.y = self.height - driveway.height * self.scaler - background.height * self.scaler + self.scaler * 2
@@ -76,6 +98,10 @@ class Game:
         coins = 0
         my_font = Game.pygame.font.Font('./assets/joystix.otf', 32)
         clock = Game.pygame.time.Clock()
+
+        timer = 0
+        timerTickrate = 0
+        timerThreshold = 12
 
         while self.isRunning:
             clock.tick(60)
@@ -89,11 +115,19 @@ class Game:
                 self.windowBorder, self.windowBorder, self.width - 2 * self.windowBorder,
                 self.height - 2 * self.windowBorder))
 
+            timerTickrate = timerTickrate + 1
+            if timerTickrate >= timerThreshold:
+                timer = timer + 1
+                timerTickrate = 0
+
             # for entity in self.entities:
             #     print(entity)
 
             speed = speed * 1.001
             distance = distance + speed
+
+            self.moveEntity(invisibleCoin, -speed * self.scaler, 0, self.width)
+
             self.drawEntity(background)
             self.moveEntity(driveway, -speed * self.scaler, -driveway.width * self.scaler, 0)
             self.moveEntity(drivewaySecond, -speed * self.scaler, 0, driveway.width * self.scaler)
@@ -106,18 +140,37 @@ class Game:
             self.drawEntity(skater)
             self.keyhandlerMoveEntity(skater, 2, driveway)
 
+            coin = coinEntities[timer % len(coinEntities)]
+            for coinOne in coinEntities:
+                coinOne.x = invisibleCoin.x
+
+            if invisibleCoin.x <= 50:
+                for coinOne in coinEntities:
+                    coinOne.y = 650
+
+            if self.isCollision(skate, coin):
+                for coinOne in coinEntities:
+                    coinOne.y = self.height
+                coins = coins + 1
+
+            self.drawEntity(coin)
+
             self.drawText("Speed: " + str(round(speed, 2)).__str__(), my_font, (0, 0, 0), 16, 16)
             self.drawText("Distance: " + distance.__trunc__().__str__(), my_font, (0, 0, 0), 16, 16 + 32)
             self.drawText("Coins: " + coins.__str__(), my_font, (0, 0, 0), 16, 16 + 32 * 2)
-            self.drawText("PlayerX: " + skater.x.__str__(), my_font, (0, 0, 0), 16, 16 + 32 * 5)
-            self.drawText("PlayerY: " + skater.y.__str__(), my_font, (0, 0, 0), 16, 16 + 32 * 6)
+            self.drawText("Player_X: " + skater.x.__str__(), my_font, (0, 0, 0), 16, 16 + 32 * 5)
+            self.drawText("Player_Y: " + skater.y.__str__(), my_font, (0, 0, 0), 16, 16 + 32 * 6)
+            self.drawText("Coin_invisible_x: " + invisibleCoin.x.__str__(), my_font, (0, 0, 0), 16, 16 + 32 * 7)
+            self.drawText("Coin_invisible_y: " + invisibleCoin.y.__str__(), my_font, (0, 0, 0), 16, 16 + 32 * 8)
+            self.drawText("Coin_X: " + coin.x.__str__(), my_font, (0, 0, 0), 16, 16 + 32 * 9)
+            self.drawText("Coin_Y: " + coin.y.__str__(), my_font, (0, 0, 0), 16, 16 + 32 * 10)
 
             if self.keys[Game.pygame.K_ESCAPE]:
                 self.isRunning = False
             if self.keys[Game.pygame.K_UP]:
-                speed += .1
+                speed *= 1.1
             if self.keys[Game.pygame.K_DOWN]:
-                speed -= .1
+                speed *= .9
             if speed <= 0:
                 speed = 0
             Game.pygame.display.update()
