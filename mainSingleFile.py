@@ -12,7 +12,7 @@ windowWidth = 1024
 windowHeight = 768
 windowBorder = 0
 win = pygame.display.set_mode((windowWidth, windowHeight), pygame.FULLSCREEN)
-scaler = 2.5
+scaler = 3
 player1img = pygame.image.load("assets/p1_default.png").convert_alpha()
 player1DefaultImg = pygame.image.load("assets/p1_default.png").convert_alpha()
 player1JumpImg = pygame.image.load("assets/p1_jump.png").convert_alpha()
@@ -239,14 +239,18 @@ while run:
     player1skate = pygame.draw.rect(win, (255, 255, 0), (player1x, player1y + (22 * scaler), skateWidth, skateHeight))
     skateImg = pygame.transform.scale(skateImg, (skateWidth, skateHeight))
 
+    scoreCalculated = distanceTraveled * ((coinsCollected + 1) * 2) * (tricksDone + 1)
     textString1 = "PlayerX: " + player1x.__str__() + "; PlayerY: " + player1y.__str__()
     textString2 = "Distance Traveled: " + distanceTraveled.__str__()
     textString3 = "Coins Collected: " + coinsCollected.__str__() + "; Tricks Done: " + tricksDone.__str__()
+    textString4 = "Score: " + scoreCalculated.__str__()
     pygame.font.init()
-    my_font = pygame.font.SysFont('Monospace', 12)
+    my_font = pygame.font.Font('./assets/joystix.otf', 12)
+    my_font2 = pygame.font.Font('./assets/joystix.otf', 32)
     text_surface1 = my_font.render(textString1, False, (0, 0, 0))
     text_surface2 = my_font.render(textString2, False, (0, 0, 0))
     text_surface3 = my_font.render(textString3, False, (0, 0, 0))
+    text_surface4 = my_font2.render(textString4, False, (0, 0, 0))
 
     cone = pygame.draw.rect(win, (255, 0, 0), (coneScrollX + windowWidth, randomConeY, coneWidth, coneHeight * .3))
     coneImg = pygame.transform.scale(coneImg, (coneWidth, coneHeight))
@@ -275,6 +279,7 @@ while run:
     win.blit(text_surface1, (0, 0))
     win.blit(text_surface2, (0, 14))
     win.blit(text_surface3, (0, 14*2))
+    win.blit(text_surface4, (0, 14*3))
 
     if player1skate.colliderect(coin):
         coinsCollected += 1
